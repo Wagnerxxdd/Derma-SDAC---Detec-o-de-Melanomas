@@ -3,6 +3,7 @@ import 'package:camera/camera.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'models/photo_model.dart';
 import 'views/camera_screen.dart';
+import 'views/home_screen.dart';
 
 List<CameraDescription> cameras = [];
 
@@ -25,7 +26,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Detecção de Melanomas',
       theme: ThemeData(primarySwatch: Colors.blue),
-      home: CameraScreen(cameras: cameras),
+      home: HomeScreen(cameras: cameras),
     );
   }
 }
