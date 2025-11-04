@@ -3,11 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../services/photo_service.dart';
 import '../models/photo_model.dart';
-import 'camera_screen.dart';
-import 'history_screen.dart';
+import 'image_analysis_screen.dart';
+import 'camera_instructions_screen.dart';
 import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
-import 'image_analysis_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final List<CameraDescription> cameras;
@@ -35,14 +34,48 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // ✅ Função para abrir a galeria do celular
+  /// 📁 Escolher imagem da galeria e ir direto pra análise
   Future<void> _pickImageFromGallery() async {
-    final ImagePicker picker = ImagePicker();
-    final XFile? pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
       await _photoService.savePhoto(pickedFile.path);
-      _loadPhotos();
+      await _loadPhotos();
+
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ImageAnalysisScreen(imagePath: pickedFile.path),
+          ),
+        );
+      }
+    }
+  }
+
+  /// 📸 Abrir câmera com instruções → capturar foto → ir para análise
+  Future<void> _openCameraFlow() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => CameraInstructionsScreen(cameras: widget.cameras),
+      ),
+    );
+
+    // Se a câmera retornar o caminho da imagem, já abre análise
+    if (result is String && result.isNotEmpty) {
+      await _photoService.savePhoto(result);
+      await _loadPhotos();
+
+      if (mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ImageAnalysisScreen(imagePath: result),
+          ),
+        );
+      }
     }
   }
 
@@ -55,7 +88,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             const SizedBox(height: 10),
 
-            // ====== LOGO NO TOPO ======
+            // ===== LOGO =====
             Center(
               child: CircleAvatar(
                 radius: 45,
@@ -64,14 +97,13 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-
-            // ====== TOPO COM BOTÃO DE ATUALIZAR E LOGO ======
+            // ===== CABEÇALHO =====
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const SizedBox(width: 48), // espaço p/ alinhar visualmente
+                  const SizedBox(width: 48),
                   const Text(
                     "Histórico",
                     style: TextStyle(
@@ -83,7 +115,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   IconButton(
                     icon: const Icon(Icons.refresh, color: Colors.teal),
                     tooltip: 'Atualizar histórico',
-                    onPressed: _loadPhotos, // 🔄 Recarrega a lista
+                    onPressed: _loadPhotos,
                   ),
                 ],
               ),
@@ -91,7 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
             const SizedBox(height: 25),
 
-            // ====== LISTA DE IMAGENS ======
+            // ===== LISTA DE IMAGENS =====
             Expanded(
               child: _photos.isEmpty
                   ? const Center(
@@ -164,7 +196,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
 
-            // ====== LINHA DIVISÓRIA ======
+            // ===== DIVISÓRIA =====
             const Divider(thickness: 1),
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 6),
@@ -175,7 +207,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const Divider(thickness: 1),
 
-            // ====== BOTÕES GALERIA / CÂMERA ======
+            // ===== BOTÕES GALERIA / CÂMERA =====
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: Row(
@@ -189,15 +221,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   _buildButton(
                     text: "Câmera",
                     icon: Icons.camera_alt_outlined,
-                    onPressed: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => CameraScreen(cameras: widget.cameras),
-                        ),
-                      );
-                      _loadPhotos(); // 🔄 Atualiza ao voltar da câmera
-                    },
+                    onPressed: _openCameraFlow,
                   ),
                 ],
               ),

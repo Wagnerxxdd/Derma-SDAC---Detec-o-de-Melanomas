@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import '../services/camera_service.dart';
 import '../services/photo_service.dart';
-import 'history_screen.dart';
+import '../views/image_analysis_screen.dart'; // tela de análise
 
 class CameraScreen extends StatefulWidget {
   final List<CameraDescription> cameras;
@@ -52,13 +52,19 @@ class _CameraScreenState extends State<CameraScreen> {
       final image = await _cameraService.takePicture();
       await _photoService.savePhoto(image.path);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('📸 Foto salva em: ${image.path}')),
+      if (!mounted) return;
+      // ✅ Depois de tirar a foto, abre a tela de análise
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ImageAnalysisScreen(imagePath: image.path),
+        ),
       );
-
-      Navigator.pop(context); // volta para a tela anterior
     } catch (e) {
       debugPrint('Erro ao tirar foto: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao tirar foto: $e')),
+      );
     }
   }
 
@@ -77,16 +83,6 @@ class _CameraScreenState extends State<CameraScreen> {
             ),
             tooltip: 'Flash',
             onPressed: _toggleFlash,
-          ),
-          IconButton(
-            icon: const Icon(Icons.history),
-            tooltip: 'Histórico',
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => HistoryScreen()),
-              );
-            },
           ),
         ],
       ),
