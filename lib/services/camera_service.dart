@@ -7,13 +7,15 @@ class CameraService {
   CameraController get controller => _controller;
   Future<void> get initializeControllerFuture => _initializeControllerFuture;
 
-  void initialize(List<CameraDescription> cameras) {
+  Future<void> initialize(List<CameraDescription> cameras) async {
     _controller = CameraController(
       cameras.first,
       ResolutionPreset.high,
     );
     _initializeControllerFuture = _controller.initialize();
+    await _initializeControllerFuture;
   }
+
 
   Future<XFile> takePicture() async {
     await _initializeControllerFuture;

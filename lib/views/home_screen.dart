@@ -53,7 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: 30),
+            const SizedBox(height: 10),
 
             // ====== LOGO NO TOPO ======
             Center(
@@ -61,6 +61,31 @@ class _HomeScreenState extends State<HomeScreen> {
                 radius: 45,
                 backgroundColor: Colors.teal.shade100,
                 backgroundImage: const AssetImage('assets/logo.jpeg'),
+              ),
+            ),
+
+
+            // ====== TOPO COM BOTÃO DE ATUALIZAR E LOGO ======
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const SizedBox(width: 48), // espaço p/ alinhar visualmente
+                  const Text(
+                    "Histórico",
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 18,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.refresh, color: Colors.teal),
+                    tooltip: 'Atualizar histórico',
+                    onPressed: _loadPhotos, // 🔄 Recarrega a lista
+                  ),
+                ],
               ),
             ),
 
@@ -91,8 +116,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) =>
-                                    ImageAnalysisScreen(imagePath: photo.path),
+                                builder: (_) => ImageAnalysisScreen(imagePath: photo.path),
                               ),
                             );
                           },
@@ -115,8 +139,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
                                 color: Colors.grey.shade200,
                                 borderRadius: BorderRadius.circular(10),
@@ -125,8 +148,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                             const SizedBox(height: 6),
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
                                 color: Colors.grey.shade200,
                                 borderRadius: BorderRadius.circular(10),
@@ -174,7 +196,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           builder: (_) => CameraScreen(cameras: widget.cameras),
                         ),
                       );
-                      _loadPhotos();
+                      _loadPhotos(); // 🔄 Atualiza ao voltar da câmera
                     },
                   ),
                 ],
