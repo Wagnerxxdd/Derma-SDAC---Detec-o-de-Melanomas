@@ -7,6 +7,7 @@ import 'image_analysis_screen.dart';
 import 'camera_instructions_screen.dart';
 import 'package:camera/camera.dart';
 import 'package:image_picker/image_picker.dart';
+import 'contributors_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final List<CameraDescription> cameras;
@@ -103,7 +104,16 @@ class _HomeScreenState extends State<HomeScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const SizedBox(width: 48),
+                  IconButton(
+                    icon: const Icon(Icons.info_outline, color: Colors.teal),
+                    tooltip: 'Sobre o projeto',
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ContributorsScreen()),
+                      );
+                    },
+                  ),
                   const Text(
                     "Histórico",
                     style: TextStyle(
