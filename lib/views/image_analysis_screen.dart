@@ -1,5 +1,8 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:image/image.dart' as img;
+import '../services/ai_service.dart';
 
 class ImageAnalysisScreen extends StatefulWidget {
   final String imagePath;
@@ -11,27 +14,86 @@ class ImageAnalysisScreen extends StatefulWidget {
 }
 
 class _ImageAnalysisScreenState extends State<ImageAnalysisScreen> {
+  final AiService _aiService = AiService();
   bool _isAnalyzing = false;
+  String _analysisMessage = "";
   double? _malignantProbability;
   double? _benignProbability;
+  Uint8List? _segmentationMask;
 
-  Future<void> _simulateAnalysis() async {
+  // O modelo não é mais carregado no initState
+
+  @override
+  void dispose() {
+    // O dispose agora é tratado dentro do _runAnalysis, 
+    // mas é uma boa prática chamar para o caso de a tela ser descartada inesperadamente.
+    _aiService.close(); 
+    super.dispose();
+  }
+
+  Future<void> _runAnalysis() async {
+    if (!mounted) return;
     setState(() {
       _isAnalyzing = true;
+      _analysisMessage = "Carregando modelo de IA...";
+      _segmentationMask = null;
+      _malignantProbability = null;
     });
 
-    // Simula o tempo de "análise" da IA
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      await _aiService.loadModel();
 
-    // Simula resultados (fixos aqui, mas pode vir do backend)
-    const malignant = 72.0;
-    const benign = 28.0;
+      if (!mounted) return;
+      setState(() {
+        _analysisMessage = "Analisando imagem...";
+      });
 
-    setState(() {
-      _isAnalyzing = false;
-      _malignantProbability = malignant;
-      _benignProbability = benign;
-    });
+      final output = await _aiService.runInference(widget.imagePath);
+
+      final List<dynamic> batch = output;
+      final List<dynamic> image = batch[0];
+      
+      double positivePixels = 0;
+      final maskImage = img.Image(width: 256, height: 256);
+
+      for (int y = 0; y < 256; y++) {
+        final List<dynamic> row = image[y];
+        for (int x = 0; x < 256; x++) {
+          final List<dynamic> pixel = row[x];
+          final double value = (pixel[0] as num).toDouble();
+          
+          if (value > 0.5) {
+            positivePixels++;
+            maskImage.setPixel(x, y, img.ColorRgba8(255, 0, 0, 128));
+          } else {
+            maskImage.setPixel(x, y, img.ColorRgba8(0, 0, 0, 0));
+          }
+        }
+      }
+
+      final totalPixels = 256 * 256;
+      final malignantProb = (positivePixels / totalPixels) * 100;
+      final encodedMask = Uint8List.fromList(img.encodePng(maskImage));
+
+      if (mounted) {
+        setState(() {
+          _malignantProbability = malignantProb;
+          _benignProbability = 100 - malignantProb;
+          _segmentationMask = encodedMask;
+        });
+      }
+
+    } catch (e, s) {
+      print("Erro durante a análise: $e");
+      print("Stack trace: $s");
+    } finally {
+      _aiService.close(); // Garante que o interpreter seja liberado após o uso.
+      if (mounted) {
+        setState(() {
+          _isAnalyzing = false;
+        });
+      }
+    }
   }
 
   @override
@@ -45,19 +107,24 @@ class _ImageAnalysisScreenState extends State<ImageAnalysisScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // ====== IMAGEM ======
             Expanded(
-              child: Image.file(File(widget.imagePath)),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Image.file(File(widget.imagePath)),
+                  if (_segmentationMask != null)
+                    Image.memory(_segmentationMask!),
+                ],
+              ),
             ),
             const SizedBox(height: 20),
 
-            // ====== ESTADOS ======
             if (_isAnalyzing)
-              const Column(
+              Column(
                 children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 10),
-                  Text("Analisando imagem..."),
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 10),
+                  Text(_analysisMessage),
                 ],
               )
             else if (_malignantProbability != null)
@@ -70,6 +137,7 @@ class _ImageAnalysisScreenState extends State<ImageAnalysisScreen> {
                   LinearProgressIndicator(
                     value: _malignantProbability! / 100,
                     minHeight: 10,
+                    backgroundColor: Colors.grey[300],
                     color: Colors.redAccent,
                   ),
                   Text("${_malignantProbability!.toStringAsFixed(1)}%"),
@@ -81,12 +149,11 @@ class _ImageAnalysisScreenState extends State<ImageAnalysisScreen> {
                   LinearProgressIndicator(
                     value: _benignProbability! / 100,
                     minHeight: 10,
+                     backgroundColor: Colors.grey[300],
                     color: Colors.green,
                   ),
                   Text("${_benignProbability!.toStringAsFixed(1)}%"),
                   const SizedBox(height: 30),
-
-                  // ✅ Botão para voltar à tela inicial
                   ElevatedButton.icon(
                     onPressed: () {
                       Navigator.popUntil(context, (route) => route.isFirst);
@@ -94,34 +161,24 @@ class _ImageAnalysisScreenState extends State<ImageAnalysisScreen> {
                     icon: const Icon(Icons.home_outlined),
                     label: const Text("Voltar para início"),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.teal,
+                      backgroundColor: const Color(0xFF4EA39B),
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                   ),
                 ],
               )
             else
               ElevatedButton.icon(
-                onPressed: _simulateAnalysis,
+                onPressed: _runAnalysis,
                 icon: const Icon(Icons.analytics_outlined),
                 label: const Text("Analisar"),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.teal,
+                  backgroundColor: const Color(0xFF4EA39B),
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
               ),
           ],

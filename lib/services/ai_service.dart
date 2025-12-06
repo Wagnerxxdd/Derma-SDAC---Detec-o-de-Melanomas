@@ -1,59 +1,59 @@
-import 'dart:convert';
 import 'dart:io';
-import 'package:http/http.dart' as http;
+import 'dart:typed_data';
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:path_provider/path_provider.dart';
+import 'package:image/image.dart' as img;
+import 'package:tflite_flutter_plus/tflite_flutter_plus.dart';
 
-/// Serviço responsável por enviar imagens para o backend de IA
-/// e retornar as probabilidades de melanoma maligno/benigno.
-///
-/// Assim que o backend enviar o endpoint, basta ajustar a constante [apiUrl].
-class AIService {
-  // 🔗 Substitua esta URL quando o backend enviar o endpoint real
-  static const String apiUrl = "https://api.seu-backend.com/analyze";
+class AiService {
+  Interpreter? _interpreter;
 
-  /// Analisa uma imagem localmente e retorna as probabilidades.
-  ///
-  /// Retorna um mapa com as chaves:
-  ///  - "malignant": probabilidade (0–100)
-  ///  - "benign": probabilidade (0–100)
-  ///
-  /// Em caso de erro de rede ou resposta inválida, lança uma Exception.
-  Future<Map<String, double>> analyzeImage(String imagePath) async {
-    try {
-      // Lê os bytes da imagem e converte para base64
-      final bytes = await File(imagePath).readAsBytes();
-      final base64Image = base64Encode(bytes);
+  Future<void> loadModel() async {
+    // Carrega o modelo dos assets e o copia para um arquivo temporário.
+    // Esta abordagem é mais robusta e evita deadlocks em alguns dispositivos.
+    final modelData = await rootBundle.load('assets/models/derma_unet_v02.tflite');
+    final tempDir = await getTemporaryDirectory();
+    final tempFile = File('${tempDir.path}/model.tflite');
+    await tempFile.writeAsBytes(
+        modelData.buffer.asUint8List(modelData.offsetInBytes, modelData.lengthInBytes));
 
-      // Envia a requisição HTTP
-      final response = await http.post(
-        Uri.parse(apiUrl),
-        headers: {
-          'Content-Type': 'application/json',
-          // 'Authorization': 'Bearer SEU_TOKEN_AQUI', // se o back exigir
-        },
-        body: jsonEncode({'image': base64Image}),
-      );
+    _interpreter = await Interpreter.fromFile(tempFile);
+  }
 
-      // Log básico (útil para debug)
-      print("📤 Enviando imagem para análise...");
-      print("📥 Status: ${response.statusCode}");
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-
-        // Garante que o backend devolva os campos esperados
-        final malignant = (data['malignant_probability'] ?? 0.0) * 100;
-        final benign = (data['benign_probability'] ?? 0.0) * 100;
-
-        return {
-          'malignant': malignant,
-          'benign': benign,
-        };
-      } else {
-        throw Exception('Erro na resposta da IA: ${response.statusCode}');
-      }
-    } catch (e) {
-      print("❌ Erro ao analisar imagem: $e");
-      rethrow;
+  Future<List<dynamic>> runInference(String imagePath) async {
+    if (_interpreter == null) {
+      throw Exception('Erro: O interpretador de IA não foi carregado.');
     }
+
+    final imageBytes = await File(imagePath).readAsBytes();
+    final image = img.decodeImage(imageBytes)!;
+    final resizedImage = img.copyResize(image, width: 256, height: 256);
+
+    final input = _imageToInputList(resizedImage);
+
+    final output = List.filled(1 * 256 * 256 * 1, 0.0).reshape([1, 256, 256, 1]);
+
+    _interpreter!.run(input, output);
+
+    return output;
+  }
+
+  List<dynamic> _imageToInputList(img.Image image) {
+    var buffer = Float32List(1 * 256 * 256 * 3);
+    var bufferIndex = 0;
+    for (var y = 0; y < image.height; y++) {
+      for (var x = 0; x < image.width; x++) {
+        var pixel = image.getPixel(x, y);
+        buffer[bufferIndex++] = pixel.r / 255.0;
+        buffer[bufferIndex++] = pixel.g / 255.0;
+        buffer[bufferIndex++] = pixel.b / 255.0;
+      }
+    }
+    return buffer.reshape([1, 256, 256, 3]);
+  }
+
+  void close() {
+    _interpreter?.close();
+    _interpreter = null;
   }
 }
