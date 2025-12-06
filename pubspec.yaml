@@ -29,7 +29,10 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
+<<<<<<< HEAD
     - assets/models/
+=======
+>>>>>>> d975d50dd70566111ea09db7f9d4bb94ac390747
     - assets/logo.jpeg
     - assets/camera.jpeg
     - assets/aleksandro.jpg
