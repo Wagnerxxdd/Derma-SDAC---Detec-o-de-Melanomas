@@ -1,7 +1,5 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:image/image.dart' as img;
 import '../services/ai_service.dart';
 
 class ImageAnalysisScreen extends StatefulWidget {
@@ -19,14 +17,10 @@ class _ImageAnalysisScreenState extends State<ImageAnalysisScreen> {
   String _analysisMessage = "";
   double? _malignantProbability;
   double? _benignProbability;
-  Uint8List? _segmentationMask;
-
-  // O modelo não é mais carregado no initState
+  bool? _isMalignant;
 
   @override
   void dispose() {
-    // O dispose agora é tratado dentro do _runAnalysis, 
-    // mas é uma boa prática chamar para o caso de a tela ser descartada inesperadamente.
     _aiService.close(); 
     super.dispose();
   }
@@ -35,59 +29,38 @@ class _ImageAnalysisScreenState extends State<ImageAnalysisScreen> {
     if (!mounted) return;
     setState(() {
       _isAnalyzing = true;
-      _analysisMessage = "Carregando modelo de IA...";
-      _segmentationMask = null;
+      _analysisMessage = "Carregando modelos de IA...";
       _malignantProbability = null;
     });
 
     try {
-      await _aiService.loadModel();
+      await _aiService.loadModels();
 
       if (!mounted) return;
       setState(() {
-        _analysisMessage = "Analisando imagem...";
+        _analysisMessage = "Realizando classificação com MLP...";
       });
 
-      final output = await _aiService.runInference(widget.imagePath);
-
-      final List<dynamic> batch = output;
-      final List<dynamic> image = batch[0];
-      
-      double positivePixels = 0;
-      final maskImage = img.Image(width: 256, height: 256);
-
-      for (int y = 0; y < 256; y++) {
-        final List<dynamic> row = image[y];
-        for (int x = 0; x < 256; x++) {
-          final List<dynamic> pixel = row[x];
-          final double value = (pixel[0] as num).toDouble();
-          
-          if (value > 0.5) {
-            positivePixels++;
-            maskImage.setPixel(x, y, img.ColorRgba8(255, 0, 0, 128));
-          } else {
-            maskImage.setPixel(x, y, img.ColorRgba8(0, 0, 0, 0));
-          }
-        }
-      }
-
-      final totalPixels = 256 * 256;
-      final malignantProb = (positivePixels / totalPixels) * 100;
-      final encodedMask = Uint8List.fromList(img.encodePng(maskImage));
+      final results = await _aiService.runFullAnalysis(widget.imagePath);
 
       if (mounted) {
         setState(() {
-          _malignantProbability = malignantProb;
-          _benignProbability = 100 - malignantProb;
-          _segmentationMask = encodedMask;
+          _malignantProbability = (results['malignantProb'] as num).toDouble();
+          _benignProbability = 100 - (results['malignantProb'] as num).toDouble();
+          _isMalignant = results['isMalignant'];
         });
       }
 
     } catch (e, s) {
       print("Erro durante a análise: $e");
       print("Stack trace: $s");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Erro na análise: $e")),
+        );
+      }
     } finally {
-      _aiService.close(); // Garante que o interpreter seja liberado após o uso.
+      _aiService.close();
       if (mounted) {
         setState(() {
           _isAnalyzing = false;
@@ -100,71 +73,82 @@ class _ImageAnalysisScreenState extends State<ImageAnalysisScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Análise da Imagem"),
+        title: const Text("Resultado da IA"),
+        backgroundColor: const Color(0xFF4EA39B),
+        foregroundColor: Colors.white,
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Expanded(
+            Container(
+              height: 300,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(15),
+                border: Border.all(color: Colors.grey.shade300),
+              ),
+              clipBehavior: Clip.antiAlias,
               child: Stack(
                 alignment: Alignment.center,
                 children: [
-                  Image.file(File(widget.imagePath)),
-                  if (_segmentationMask != null)
-                    Image.memory(_segmentationMask!),
+                  Image.file(File(widget.imagePath), fit: BoxFit.cover),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
 
             if (_isAnalyzing)
               Column(
                 children: [
-                  const CircularProgressIndicator(),
-                  const SizedBox(height: 10),
-                  Text(_analysisMessage),
+                  const CircularProgressIndicator(color: Color(0xFF4EA39B)),
+                  const SizedBox(height: 16),
+                  Text(_analysisMessage, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
                 ],
               )
             else if (_malignantProbability != null)
               Column(
                 children: [
-                  Text(
-                    "Probabilidade de melanoma maligno:",
-                    style: Theme.of(context).textTheme.titleMedium,
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: _isMalignant! ? Colors.red.shade50 : Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: _isMalignant! ? Colors.red.shade200 : Colors.green.shade200),
+                    ),
+                    child: Column(
+                      children: [
+                        Text(
+                          _isMalignant! ? "ALERTA: MELANOMA POSSÍVEL" : "BAIXA PROBABILIDADE",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: _isMalignant! ? Colors.red.shade700 : Colors.green.shade700,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          "Esta análise é baseada em IA e não substitui um diagnóstico médico.",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+                        ),
+                      ],
+                    ),
                   ),
-                  LinearProgressIndicator(
-                    value: _malignantProbability! / 100,
-                    minHeight: 10,
-                    backgroundColor: Colors.grey[300],
-                    color: Colors.redAccent,
-                  ),
-                  Text("${_malignantProbability!.toStringAsFixed(1)}%"),
-                  const SizedBox(height: 20),
-                  Text(
-                    "Probabilidade de melanoma benigno:",
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  LinearProgressIndicator(
-                    value: _benignProbability! / 100,
-                    minHeight: 10,
-                     backgroundColor: Colors.grey[300],
-                    color: Colors.green,
-                  ),
-                  Text("${_benignProbability!.toStringAsFixed(1)}%"),
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 24),
+                  _buildResultBar("Probabilidade Maligna (MLP)", _malignantProbability!, Colors.redAccent),
+                  const SizedBox(height: 16),
+                  _buildResultBar("Confiança Benigna", _benignProbability!, Colors.green),
+                  const SizedBox(height: 32),
                   ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.popUntil(context, (route) => route.isFirst);
-                    },
-                    icon: const Icon(Icons.home_outlined),
-                    label: const Text("Voltar para início"),
+                    onPressed: () => Navigator.popUntil(context, (route) => route.isFirst),
+                    icon: const Icon(Icons.home),
+                    label: const Text("Finalizar"),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF4EA39B),
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      minimumSize: const Size(double.infinity, 50),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                   ),
                 ],
@@ -172,18 +156,43 @@ class _ImageAnalysisScreenState extends State<ImageAnalysisScreen> {
             else
               ElevatedButton.icon(
                 onPressed: _runAnalysis,
-                icon: const Icon(Icons.analytics_outlined),
-                label: const Text("Analisar"),
+                icon: const Icon(Icons.psychology),
+                label: const Text("Iniciar Análise Inteligente"),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF4EA39B),
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildResultBar(String label, double percentage, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text("${percentage.toStringAsFixed(1)}%"),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: LinearProgressIndicator(
+            value: percentage / 100,
+            minHeight: 12,
+            backgroundColor: Colors.grey.shade200,
+            color: color,
+          ),
+        ),
+      ],
     );
   }
 }
