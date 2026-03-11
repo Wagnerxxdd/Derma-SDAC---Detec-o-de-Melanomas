@@ -1,16 +1,5 @@
-<<<<<<< HEAD
 part of 'photo_model.dart';
 
-=======
-// GENERATED CODE - DO NOT MODIFY BY HAND
-
-part of 'photo_model.dart';
-
-// **************************************************************************
-// TypeAdapterGenerator
-// **************************************************************************
-
->>>>>>> c55b47425c73b1f3ce8449a35c617e22aa0d352a
 class PhotoModelAdapter extends TypeAdapter<PhotoModel> {
   @override
   final int typeId = 0;
