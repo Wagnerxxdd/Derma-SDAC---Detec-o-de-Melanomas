@@ -15,7 +15,14 @@ class CameraInstructionsScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const SizedBox(height: 20),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: IconButton(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.arrow_back_ios_new),
+                tooltip: 'Voltar',
+              ),
+            ),
 
             // ===== IMAGEM DE INSTRUÇÃO =====
             Expanded(

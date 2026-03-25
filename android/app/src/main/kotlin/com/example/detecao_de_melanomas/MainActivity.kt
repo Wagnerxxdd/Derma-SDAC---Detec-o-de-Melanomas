@@ -1,6 +1,7 @@
 package com.example.detecao_de_melanomas
 
 import android.content.ContentValues
+import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
@@ -24,6 +25,14 @@ class MainActivity: FlutterActivity() {
                 if (path != null) {
                     val saved = saveImageToGallery(path)
                     if (saved) result.success(true) else result.error("ERROR", "Não foi possível salvar", null)
+                } else {
+                    result.error("ERROR", "Caminho nulo", null)
+                }
+            } else if (call.method == "deleteImageFromGallery") {
+                val path = call.argument<String>("path")
+                if (path != null) {
+                    val deleted = deleteImageFromGallery(path)
+                    result.success(deleted)
                 } else {
                     result.error("ERROR", "Caminho nulo", null)
                 }
@@ -65,6 +74,31 @@ class MainActivity: FlutterActivity() {
         } catch (e: Exception) {
             e.printStackTrace()
             return false
+        }
+    }
+
+    private fun deleteImageFromGallery(path: String): Boolean {
+        return try {
+            val filename = File(path).name
+            val collection: Uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+
+            val selection = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                "${MediaStore.Images.Media.DISPLAY_NAME} = ? AND ${MediaStore.Images.Media.RELATIVE_PATH} = ?"
+            } else {
+                "${MediaStore.Images.Media.DISPLAY_NAME} = ?"
+            }
+
+            val args = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                arrayOf(filename, Environment.DIRECTORY_PICTURES + "/MelanomaApp/")
+            } else {
+                arrayOf(filename)
+            }
+
+            val rows = contentResolver.delete(collection, selection, args)
+            rows > 0
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
         }
     }
 }

@@ -87,19 +87,24 @@ class _ImageAnalysisScreenState extends State<ImageAnalysisScreen> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
 
             /// IMAGEM
             Container(
+              width: double.infinity,
               height: 300,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(15),
                 border: Border.all(color: Colors.grey.shade300),
               ),
               clipBehavior: Clip.antiAlias,
-              child: Image.file(
-                File(widget.imagePath),
-                fit: BoxFit.cover,
+              child: Center(
+                child: Image.file(
+                  File(widget.imagePath),
+                  fit: BoxFit.contain,
+                  alignment: Alignment.center,
+                ),
               ),
             ),
 
@@ -149,8 +154,21 @@ class _ImageAnalysisScreenState extends State<ImageAnalysisScreen> {
                           ),
                         ),
                         const SizedBox(height: 8),
+                        Text(
+                          _isMalignant!
+                              ? "Procure um dermatologista o quanto antes. Não confie 100% neste resultado."
+                              : "Não identificamos sinais fortes de melanoma, mas se notar algo estranho procure um médico.",
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 13,
+                            color: Colors.red,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
                         const Text(
                           "Não substitui diagnóstico médico",
+                          textAlign: TextAlign.center,
                           style: TextStyle(fontSize: 12),
                         ),
                       ],

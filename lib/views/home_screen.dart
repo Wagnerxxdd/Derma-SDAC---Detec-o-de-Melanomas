@@ -53,6 +53,38 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     });
   }
 
+  Future<void> _confirmAndClearHistory() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Limpar histórico'),
+        content: const Text(
+          'Deseja remover todos os itens do histórico?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Limpar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    await _photoService.clearHistory();
+    await _loadPhotos();
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Histórico limpo com sucesso.')),
+    );
+  }
+
   Future<void> _pickImageFromGallery() async {
     setState(() {
       _isScanExpanded = false;
@@ -63,7 +95,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
 
     if (pickedFile != null) {
-      await _photoService.savePhoto(pickedFile.path);
+      await _photoService.savePhotoToHistory(pickedFile.path);
       await _loadPhotos();
 
       if (mounted) {
@@ -75,6 +107,33 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         );
       }
     }
+  }
+
+  Future<void> _deleteOnlyHistory(PhotoModel photo) async {
+    await _photoService.deleteFromHistory(photo);
+    await _loadPhotos();
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Imagem removida apenas do histórico.')),
+    );
+  }
+
+  Future<void> _deleteHistoryAndGallery(PhotoModel photo) async {
+    final deletedInGallery = await _photoService.deleteFromGallery(photo.path);
+    await _photoService.deleteFromHistory(photo);
+    await _loadPhotos();
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          deletedInGallery
+              ? 'Imagem removida do histórico e da galeria.'
+              : 'Removida do histórico. Não foi possível confirmar exclusão da galeria.',
+        ),
+      ),
+    );
   }
 
   Future<void> _openCameraFlow() async {
@@ -178,6 +237,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ),
           const SizedBox(width: 8),
+          IconButton(
+            icon: const Icon(Icons.delete_outline, color: Colors.teal),
+            tooltip: 'Limpar histórico',
+            onPressed: _confirmAndClearHistory,
+          ),
           IconButton(
             icon: const Icon(Icons.refresh, color: Colors.teal),
             onPressed: _loadPhotos,
@@ -301,9 +365,42 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     ],
                                   ),
                                 ),
-                                Icon(
-                                  Icons.chevron_right,
-                                  color: Colors.grey.shade400,
+                                PopupMenuButton<String>(
+                                  tooltip: 'Ações da imagem',
+                                  onSelected: (value) async {
+                                    if (value == 'open') {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => ImageAnalysisScreen(
+                                            imagePath: photo.path,
+                                          ),
+                                        ),
+                                      );
+                                    } else if (value == 'delete_history') {
+                                      await _deleteOnlyHistory(photo);
+                                    } else if (value == 'delete_all') {
+                                      await _deleteHistoryAndGallery(photo);
+                                    }
+                                  },
+                                  itemBuilder: (_) => const [
+                                    PopupMenuItem<String>(
+                                      value: 'open',
+                                      child: Text('Abrir análise'),
+                                    ),
+                                    PopupMenuItem<String>(
+                                      value: 'delete_history',
+                                      child: Text('Excluir só do histórico'),
+                                    ),
+                                    PopupMenuItem<String>(
+                                      value: 'delete_all',
+                                      child: Text('Excluir histórico + galeria'),
+                                    ),
+                                  ],
+                                  child: Icon(
+                                    Icons.more_vert,
+                                    color: Colors.grey.shade500,
+                                  ),
                                 ),
                               ],
                             ),
