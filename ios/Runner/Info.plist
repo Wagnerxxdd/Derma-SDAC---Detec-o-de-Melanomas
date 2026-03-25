@@ -45,5 +45,11 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Este aplicativo precisa de acesso à câmera para capturar imagens da pele para análise.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Este aplicativo precisa de acesso à biblioteca para selecionar imagens da galeria para análise.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Este aplicativo precisa de permissão para salvar imagens capturadas na galeria.</string>
 </dict>
 </plist>
