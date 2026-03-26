@@ -32,6 +32,7 @@ migrate_working_dir/
 .pub/
 /build/
 /coverage/
+/Derma-SDAC---Detec-o-de-Melanomas-teste-Kevin/
 
 # Symbolication related
 app.*.symbols
