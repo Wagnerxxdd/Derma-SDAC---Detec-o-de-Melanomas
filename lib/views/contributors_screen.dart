@@ -15,10 +15,12 @@ class ContributorsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final contributors = [
       Contributor(name: 'Robson Pequeno de Souza', role: 'Coordenador no LAIS', imagePath: 'assets/prof.robson.jpg'),
-      Contributor(name: 'Wilton Lima', role: 'Pesquisador do NUTES/LAIS', imagePath: 'assets/wilton.jpg'),
+      Contributor(name: 'José Alberto Souza Paulino', role: 'Pesquisador do NUTES/LAIS', imagePath: 'assets/José Alberto Souza Paulino.jpeg'),
       Contributor(name: 'Aleksandro da Costa Fabrício', role: 'Pesquisador do NUTES/LAIS', imagePath: 'assets/aleksandro.jpg'),
       Contributor(name: 'Wagner Tiburcio Da Silva  Junior', role: 'Estagiário do NUTES/LAIS', imagePath: 'assets/wagner.jpg'),
       Contributor(name: 'Kevin Santos Marques', role: 'Estagiário do NUTES/LAIS', imagePath: 'assets/kevin.jpeg'),
+      Contributor(name: 'Fernando de  Paiva Almeida Ferreira', role: 'Estagiário do NUTES/LAIS', imagePath: 'assets/Fernando De Paiva.jpeg'),
+      Contributor(name: 'Filippe Marcel dos Santos Lins', role: 'Estagiário do NUTES/LAIS', imagePath: 'assets/Filippe Marcel dos Santos Lins.jpeg'),
     ];
 
     return Scaffold(
@@ -59,25 +61,27 @@ class ContributorsScreen extends StatelessWidget {
                     backgroundImage: AssetImage(contributor.imagePath),
                   ),
                   const SizedBox(width: 15),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        contributor.name,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          contributor.name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        contributor.role,
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 14,
+                        const SizedBox(height: 4),
+                        Text(
+                          contributor.role,
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 14,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),

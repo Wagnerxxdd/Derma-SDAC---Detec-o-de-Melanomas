@@ -39,5 +39,8 @@ flutter:
     - assets/prof.robson.jpg
     - assets/wagner.jpg
     - assets/wilton.jpg
+    - assets/Fernando De Paiva.jpeg
+    - assets/Filippe Marcel dos Santos Lins.jpeg
+    - assets/José Alberto Souza Paulino.jpeg
     - assets/models/modeloMLP.tflite
     - assets/models/config_frontend.json
