@@ -51,5 +51,7 @@
 	<string>Este aplicativo precisa de acesso à biblioteca para selecionar imagens da galeria para análise.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Este aplicativo precisa de permissão para salvar imagens capturadas na galeria.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Este aplicativo precisa de acesso ao microfone apenas para funcionalidades de captura de video.</string>
 </dict>
 </plist>

@@ -11,6 +11,7 @@ class CameraService {
     _controller = CameraController(
       cameras.first,
       ResolutionPreset.high,
+      enableAudio: false,
     );
     _initializeControllerFuture = _controller.initialize();
     await _initializeControllerFuture;
