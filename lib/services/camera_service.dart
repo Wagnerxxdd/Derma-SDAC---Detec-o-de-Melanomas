@@ -17,7 +17,6 @@ class CameraService {
     await _initializeControllerFuture;
   }
 
-
   Future<XFile> takePicture() async {
     await _initializeControllerFuture;
     return await _controller.takePicture();
