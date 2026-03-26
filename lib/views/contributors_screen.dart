@@ -33,14 +33,6 @@ class ContributorsScreen extends StatelessWidget {
         backgroundColor: const Color(0xFFF0F0F8),
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: CircleAvatar(
-              backgroundImage: AssetImage('assets/logo.jpeg'),
-            ),
-          ),
-        ],
       ),
       body: ListView.builder(
         itemCount: contributors.length,
