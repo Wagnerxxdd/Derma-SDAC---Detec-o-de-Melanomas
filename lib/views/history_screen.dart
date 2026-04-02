@@ -75,18 +75,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           onSelected: (value) async {
                             if (value == 'delete_history') {
                               await _deleteOnlyHistory(photo);
-                            } else if (value == 'delete_all') {
-                              await _deleteHistoryAndGallery(photo);
                             }
                           },
                           itemBuilder: (_) => const [
                             PopupMenuItem<String>(
                               value: 'delete_history',
                               child: Text('Excluir só do histórico'),
-                            ),
-                            PopupMenuItem<String>(
-                              value: 'delete_all',
-                              child: Text('Excluir histórico + galeria'),
                             ),
                           ],
                         ),

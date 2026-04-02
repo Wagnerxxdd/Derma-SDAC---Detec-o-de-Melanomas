@@ -27,7 +27,7 @@ class ContributorsScreen extends StatelessWidget {
       backgroundColor: const Color(0xFFF0F0F8),
       appBar: AppBar(
         title: const Text(
-          'Derma SDAC',
+          'Colaboradores',
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
         backgroundColor: const Color(0xFFF0F0F8),

@@ -221,15 +221,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ),
           const Spacer(),
-          IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.teal),
-            tooltip: 'Limpar histórico',
-            onPressed: _confirmAndClearHistory,
-          ),
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.teal),
-            onPressed: _loadPhotos,
-          ),
+          if (_currentIndex == 0) ...[
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.teal),
+              tooltip: 'Limpar histórico',
+              onPressed: _confirmAndClearHistory,
+            ),
+            IconButton(
+              icon: const Icon(Icons.refresh, color: Colors.teal),
+              onPressed: _loadPhotos,
+            ),
+          ],
         ],
       ),
     );
@@ -266,7 +268,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Clique em Scan para carregar uma imagem',
+                          'Toque no ícone da câmera para carregar uma imagem',
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.grey.shade600,
@@ -363,8 +365,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                       );
                                     } else if (value == 'delete_history') {
                                       await _deleteOnlyHistory(photo);
-                                    } else if (value == 'delete_all') {
-                                      await _deleteHistoryAndGallery(photo);
                                     }
                                   },
                                   itemBuilder: (_) => const [
@@ -375,10 +375,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                                     PopupMenuItem<String>(
                                       value: 'delete_history',
                                       child: Text('Excluir só do histórico'),
-                                    ),
-                                    PopupMenuItem<String>(
-                                      value: 'delete_all',
-                                      child: Text('Excluir histórico + galeria'),
                                     ),
                                   ],
                                   child: Icon(
